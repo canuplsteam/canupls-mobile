@@ -110,9 +110,19 @@ CREATE POLICY "Users can update own profile" ON profiles
 CREATE POLICY "Users can insert own profile" ON profiles
     FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Anyone can view helper profiles (for browsing)
-CREATE POLICY "Anyone can view helper profiles" ON profiles
-    FOR SELECT USING (user_role = 'helper');
+-- Allow viewing profiles of task participants (needed for task detail joins)
+CREATE POLICY "Users can view profiles for tasks" ON profiles
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM tasks
+            WHERE (tasks.requester_id = profiles.id OR tasks.helper_id = profiles.id)
+            AND (tasks.requester_id = auth.uid() OR tasks.helper_id = auth.uid())
+        )
+    );
+
+-- Helpers can view available helper profiles (for browsing)
+CREATE POLICY "Anyone can view available profiles" ON profiles
+    FOR SELECT USING (is_available = TRUE);
 
 -- RLS Policies for Tasks
 -- Requesters can create tasks (any authenticated user with role 'requester' or 'both')
@@ -245,3 +255,68 @@ $$ language 'plpgsql';
 -- Trigger to increment completed tasks
 CREATE TRIGGER increment_completed_tasks_trigger AFTER UPDATE ON tasks
     FOR EACH ROW EXECUTE FUNCTION increment_completed_tasks();
+
+
+-- ============================================
+-- Checklist Items Table (for Grocery/Pharmacy tasks)
+-- ============================================
+CREATE TABLE IF NOT EXISTS checklist_items (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    task_id UUID REFERENCES tasks(id) ON DELETE CASCADE NOT NULL,
+    item_name TEXT NOT NULL,
+    is_checked BOOLEAN DEFAULT FALSE,
+    position INTEGER NOT NULL,
+    created_by UUID REFERENCES profiles(id) NOT NULL,
+    checked_by UUID REFERENCES profiles(id),
+    checked_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_checklist_items_task_id ON checklist_items(task_id);
+ALTER TABLE checklist_items ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Task participants can view checklist" ON checklist_items
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM tasks 
+            WHERE tasks.id = checklist_items.task_id 
+            AND (tasks.requester_id = auth.uid() OR tasks.helper_id = auth.uid())
+        )
+    );
+
+CREATE POLICY "Requester can create checklist items" ON checklist_items
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM tasks 
+            WHERE tasks.id = task_id 
+            AND tasks.requester_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Task participants can update checklist" ON checklist_items
+    FOR UPDATE USING (
+        EXISTS (
+            SELECT 1 FROM tasks 
+            WHERE tasks.id = checklist_items.task_id 
+            AND (tasks.requester_id = auth.uid() OR tasks.helper_id = auth.uid())
+        )
+    );
+
+CREATE POLICY "Requester can delete checklist items" ON checklist_items
+    FOR DELETE USING (
+        EXISTS (
+            SELECT 1 FROM tasks 
+            WHERE tasks.id = checklist_items.task_id 
+            AND tasks.requester_id = auth.uid()
+        )
+    );
+
+CREATE TRIGGER update_checklist_items_updated_at BEFORE UPDATE ON checklist_items
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================
+-- Enable Realtime Subscriptions
+-- ============================================
+ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
+ALTER PUBLICATION supabase_realtime ADD TABLE checklist_items;

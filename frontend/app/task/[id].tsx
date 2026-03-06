@@ -396,6 +396,29 @@ export default function TaskDetailScreen() {
           </View>
         )}
 
+        {/* Rate Button - show after task completion */}
+        {task.status === 'completed' && (
+          <TouchableOpacity
+            style={styles.rateButton}
+            activeOpacity={0.8}
+            onPress={() => {
+              const toUserId = isRequester ? task.helper_id : task.requester_id;
+              const toUserName = isRequester
+                ? task.helper?.full_name
+                : task.requester?.full_name;
+              router.push({
+                pathname: '/task/rate' as any,
+                params: { taskId: task.id, toUserId, toUserName, role: isRequester ? 'requester' : 'helper' },
+              });
+            }}
+          >
+            <Ionicons name="star" size={22} color="#F59E0B" />
+            <Text style={styles.rateButtonText}>
+              Rate {isRequester ? 'Helper' : 'Requester'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
         {/* Cancelled Badge */}
         {task.status === 'cancelled' && (
           <View style={[styles.completedBanner, { backgroundColor: Colors.error + '10' }]}>
@@ -682,5 +705,23 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Regular',
     color: Colors.gray[500],
     marginLeft: Spacing.xs,
+  },
+  rateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    paddingVertical: Spacing.md,
+    backgroundColor: '#FEF3C7',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1.5,
+    borderColor: '#F59E0B',
+  },
+  rateButtonText: {
+    fontSize: FontSizes.md,
+    fontFamily: 'Poppins-SemiBold',
+    color: '#B45309',
+    marginLeft: Spacing.sm,
   },
 });
