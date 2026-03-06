@@ -24,7 +24,7 @@ app.add_middleware(
 # Configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
-STRIPE_SECRET_KEY = os.getenv("STRIPE_API_KEY", "sk_test_4eC39HqLyjWDarjtT1zdp7dc")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 
 # Initialize Stripe
