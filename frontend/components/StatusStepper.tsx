@@ -9,21 +9,17 @@ interface StatusStepperProps {
 
 const steps = [
   { key: 'accepted', label: 'Task Accepted', icon: 'checkmark-circle' },
-  { key: 'at_location', label: 'At Shop/Location', icon: 'location' },
-  { key: 'out_for_delivery', label: 'Out for Delivery', icon: 'bicycle' },
-  { key: 'delivered', label: 'Delivered', icon: 'gift' },
+  { key: 'in_progress', label: 'In Progress', icon: 'bicycle' },
+  { key: 'completed', label: 'Completed', icon: 'gift' },
 ];
 
 const getStepIndex = (status: string): number => {
   const statusMap: Record<string, number> = {
-    'pending': 0,
-    'on_way_to_pickup': 0,
     'accepted': 0,
-    'at_location': 1,
-    'out_for_delivery': 2,
-    'delivered': 3,
+    'in_progress': 1,
+    'completed': 2,
   };
-  return statusMap[status] ?? 0;
+  return statusMap[status] ?? -1;
 };
 
 export default function StatusStepper({ currentStatus }: StatusStepperProps) {

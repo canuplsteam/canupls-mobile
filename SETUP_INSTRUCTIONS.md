@@ -77,7 +77,7 @@ Expected response:
 ### 2. Frontend Testing
 
 **Web Preview:**
-- URL: https://supabase-task-sync.preview.emergentagent.com
+- URL: https://hyperlocal-market-7.preview.emergentagent.com
 - The Metro bundler needs a few minutes to complete bundling
 - Refresh the page if you see "starting up" message
 

@@ -183,6 +183,7 @@ export default function HomeScreen() {
                 key={task.id} 
                 style={styles.taskCard}
                 activeOpacity={0.7}
+                onPress={() => router.push(`/task/${task.id}` as any)}
               >
                 <View style={styles.taskCardContent}>
                   <View style={styles.taskHeader}>

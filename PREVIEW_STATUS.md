@@ -33,7 +33,7 @@ The logs show:
 
 **Good News:** Your app is bundling successfully!
 
-The web preview URL is: **https://supabase-task-sync.preview.emergentagent.com**
+The web preview URL is: **https://hyperlocal-market-7.preview.emergentagent.com**
 
 However, the Expo service keeps restarting due to ngrok tunnel conflicts. This is a known issue with the preview environment.
 

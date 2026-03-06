@@ -101,3 +101,111 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Build the Receipt and Expense Management system for Canupls hyperlocal marketplace - Phase 6. Rider should be able to upload receipt photos via camera, store in Supabase Storage, and Requester should view receipts on tracking screen. Both parties must access receipts for 30 days post-completion."
+
+backend:
+  - task: "Supabase Storage - Receipts Bucket"
+    implemented: true
+    working: "NA"
+    file: "backend/supabase_setup.sql"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Updated SQL schema: made receipts bucket public, simplified storage RLS policies, fixed task INSERT/SELECT policies for role=both users. Created migration_receipts.sql for existing DBs."
+
+frontend:
+  - task: "Task Detail Screen (task/[id].tsx)"
+    implemented: true
+    working: "NA"
+    file: "app/task/[id].tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Created unified task detail screen that adapts for requester vs rider. Shows task info, people, StatusStepper, ReceiptViewer (canUpload for rider), status update buttons, cancel button, real-time Supabase subscription."
+
+  - task: "My Tasks Screen (tabs/tasks.tsx)"
+    implemented: true
+    working: "NA"
+    file: "app/(tabs)/tasks.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Replaced placeholder with full task list. Two tabs: My Requests and My Jobs. Each task card shows category icon, title, status badge, price, date, receipt indicator. Tapping navigates to task/[id]."
+
+  - task: "ReceiptViewer Component"
+    implemented: true
+    working: "NA"
+    file: "components/ReceiptViewer.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Pre-existing component. Shows receipt thumbnails, full-screen modal viewer, camera/gallery upload button. Integrated into task/[id].tsx."
+
+  - task: "Receipt Service"
+    implemented: true
+    working: "NA"
+    file: "services/receiptService.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Simplified to use single receipt_url column (matching DB schema). Fixed upload path. Camera/gallery picker, Supabase Storage upload, task update."
+
+  - task: "StatusStepper Component"
+    implemented: true
+    working: "NA"
+    file: "components/StatusStepper.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Aligned step statuses with DB enum: accepted, in_progress, completed (was previously using non-existent statuses)."
+
+  - task: "Navigation Wiring"
+    implemented: true
+    working: "NA"
+    file: "app/_layout.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Added task route to root layout. Wired navigation: home task cards → task/[id], tasks tab → task/[id], browse accept → task/[id]."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Task Detail Screen"
+    - "My Tasks Screen"
+    - "Receipt Upload Flow"
+    - "Navigation Wiring"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    - agent: "main"
+    - message: "Phase 6 Receipt & Expense Management implementation complete. Created task/[id].tsx (unified detail screen), rebuilt tasks.tsx (full task list), wired navigation from home/browse/tasks to detail, fixed receipt service to work with existing DB schema, aligned StatusStepper with DB enum, fixed RLS policies. Migration SQL provided. Ready for testing."

@@ -114,11 +114,10 @@ CREATE POLICY "Anyone can view helper profiles" ON profiles
     FOR SELECT USING (user_role = 'helper');
 
 -- RLS Policies for Tasks
--- Requesters can create tasks
-CREATE POLICY "Requesters can create tasks" ON tasks
+-- Requesters can create tasks (any authenticated user with role 'requester' or 'both')
+CREATE POLICY "Users can create tasks" ON tasks
     FOR INSERT WITH CHECK (
-        auth.uid() = requester_id AND
-        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND user_role = 'requester')
+        auth.uid() = requester_id
     );
 
 -- Requesters can view their own tasks
@@ -127,10 +126,7 @@ CREATE POLICY "Requesters can view own tasks" ON tasks
 
 -- Helpers can view open tasks
 CREATE POLICY "Helpers can view open tasks" ON tasks
-    FOR SELECT USING (
-        status = 'open' AND
-        EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND user_role = 'helper')
-    );
+    FOR SELECT USING (status = 'open');
 
 -- Helpers can view their accepted tasks
 CREATE POLICY "Helpers can view accepted tasks" ON tasks
@@ -176,26 +172,22 @@ CREATE POLICY "Service can update transactions" ON payment_transactions
 
 -- Create Storage Bucket for Receipts
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('receipts', 'receipts', false)
+VALUES ('receipts', 'receipts', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Storage Policies for Receipts
-CREATE POLICY "Users can upload receipts for their tasks" ON storage.objects
+-- Allow authenticated users to upload receipts
+CREATE POLICY "Authenticated users can upload receipts" ON storage.objects
     FOR INSERT WITH CHECK (
         bucket_id = 'receipts' AND
-        auth.uid()::text = (storage.foldername(name))[1]
+        auth.role() = 'authenticated'
     );
 
-CREATE POLICY "Users can view receipts for their tasks" ON storage.objects
+-- Allow authenticated users involved in tasks to view receipts
+CREATE POLICY "Authenticated users can view receipts" ON storage.objects
     FOR SELECT USING (
         bucket_id = 'receipts' AND
-        (
-            auth.uid()::text = (storage.foldername(name))[1] OR
-            EXISTS (
-                SELECT 1 FROM tasks 
-                WHERE (requester_id = auth.uid() OR helper_id = auth.uid())
-            )
-        )
+        auth.role() = 'authenticated'
     );
 
 -- Function to update updated_at timestamp

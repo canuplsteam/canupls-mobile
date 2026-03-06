@@ -10,10 +10,12 @@ import {
   Modal,
   ScrollView,
   Dimensions,
+  Platform,
 } from 'react-native';
-import MapView, { Marker, Circle } from 'react-native-maps';
+import { MapView, Marker, Circle } from '../../components/MapWrapper';
 import * as Location from 'expo-location';
 import { useAuth } from '../../contexts/AuthContext';
+import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { Colors, Spacing, FontSizes, BorderRadius, Shadows } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -67,6 +69,7 @@ const categoryIcons: Record<string, any> = {
 
 export default function BrowseScreen() {
   const { user, profile, updateProfile } = useAuth();
+  const router = useRouter();
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [isOnline, setIsOnline] = useState(profile?.is_available || false);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -220,10 +223,11 @@ export default function BrowseScreen() {
                 'Task accepted! You can now see it in your active tasks.',
                 [
                   {
-                    text: 'OK',
+                    text: 'View Task',
                     onPress: () => {
                       setSelectedTask(null);
                       fetchNearbyTasks();
+                      router.push(`/task/${selectedTask.id}` as any);
                     },
                   },
                 ]
