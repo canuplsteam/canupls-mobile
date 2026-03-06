@@ -32,6 +32,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="browse"
+        options={{
+          title: 'Browse',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="map" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="tasks"
         options={{
           title: 'My Tasks',
@@ -47,6 +56,12 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="post-task"
+        options={{
+          href: null, // Hide from tabs, accessible via navigation
         }}
       />
     </Tabs>

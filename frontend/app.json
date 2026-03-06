@@ -21,6 +21,9 @@
         "NSLocationAlwaysUsageDescription": "Real-time task tracking",
         "NSCameraUsageDescription": "Upload receipt photos",
         "NSPhotoLibraryUsageDescription": "Select receipt images"
+      },
+      "config": {
+        "googleMapsApiKey": "AIzaSyCLjcGkJa5sJ6ufCtAAwQV8L-bRJJbsLNo"
       }
     },
     "android": {
@@ -36,7 +39,12 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE"
       ],
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCLjcGkJa5sJ6ufCtAAwQV8L-bRJJbsLNo"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
