@@ -51,15 +51,6 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Canupls to use your location for real-time task tracking."
         }
-      ],
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#F8F9FA"
-        }
       ]
     ],
     "experiments": {
