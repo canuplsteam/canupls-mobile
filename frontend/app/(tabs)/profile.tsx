@@ -49,9 +49,7 @@ export default function ProfileScreen() {
           <Text style={styles.profileName}>{profile?.full_name}</Text>
           <Text style={styles.profileEmail}>{user?.email}</Text>
           <View style={styles.roleBadge}>
-            <Text style={styles.roleBadgeText}>
-              {profile?.user_role === 'helper' ? 'Helper' : 'Requester'}
-            </Text>
+            <Text style={styles.roleBadgeText}>Request & Offer Help</Text>
           </View>
         </View>
 

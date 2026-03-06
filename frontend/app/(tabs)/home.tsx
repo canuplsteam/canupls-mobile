@@ -34,13 +34,11 @@ export default function HomeScreen() {
         {/* Role Badge */}
         <View style={styles.roleBadge}>
           <Ionicons
-            name={profile?.user_role === 'helper' ? 'hand-right' : 'list'}
+            name="people"
             size={20}
             color={Colors.primary}
           />
-          <Text style={styles.roleText}>
-            {profile?.user_role === 'helper' ? 'Helper Mode' : 'Requester Mode'}
-          </Text>
+          <Text style={styles.roleText}>Requester & Helper</Text>
         </View>
 
         {/* Stats Cards */}
@@ -60,29 +58,27 @@ export default function HomeScreen() {
         {/* Quick Actions */}
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         
-        {profile?.user_role === 'requester' ? (
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
-            <View style={styles.actionIcon}>
-              <Ionicons name="add-circle" size={32} color={Colors.primary} />
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Post a New Task</Text>
-              <Text style={styles.actionSubtitle}>Get help with your tasks</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color={Colors.gray[400]} />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
-            <View style={styles.actionIcon}>
-              <Ionicons name="search" size={32} color={Colors.primary} />
-            </View>
-            <View style={styles.actionContent}>
-              <Text style={styles.actionTitle}>Browse Available Tasks</Text>
-              <Text style={styles.actionSubtitle}>Find tasks near you</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color={Colors.gray[400]} />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
+          <View style={styles.actionIcon}>
+            <Ionicons name="add-circle" size={32} color={Colors.primary} />
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>Post a New Task</Text>
+            <Text style={styles.actionSubtitle}>Request help from nearby helpers</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color={Colors.gray[400]} />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionCard} activeOpacity={0.8}>
+          <View style={styles.actionIcon}>
+            <Ionicons name="search" size={32} color={Colors.success} />
+          </View>
+          <View style={styles.actionContent}>
+            <Text style={styles.actionTitle}>Browse Available Tasks</Text>
+            <Text style={styles.actionSubtitle}>Find tasks near you to earn</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color={Colors.gray[400]} />
+        </TouchableOpacity>
 
         {/* Info Card */}
         <View style={styles.infoCard}>

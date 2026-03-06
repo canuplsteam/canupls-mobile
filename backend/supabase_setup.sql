@@ -5,16 +5,19 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create enum types
-CREATE TYPE user_role AS ENUM ('requester', 'helper');
+CREATE TYPE user_role AS ENUM ('requester', 'helper', 'both');
 CREATE TYPE task_status AS ENUM ('open', 'accepted', 'in_progress', 'completed', 'cancelled');
-CREATE TYPE task_category AS ENUM ('grocery', 'delivery', 'errands', 'pet_care', 'other');
+CREATE TYPE task_category AS ENUM ('grocery', 'pharmacy', 'dog_walking', 'package_delivery', 'quick_rides', 'errands', 'other');
 
 -- Profiles Table
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID REFERENCES auth.users(id) PRIMARY KEY,
-    user_role user_role NOT NULL,
+    user_role user_role NOT NULL DEFAULT 'both',
     full_name TEXT NOT NULL,
     phone TEXT,
+    address TEXT,
+    address_lat DECIMAL(10,8),
+    address_lng DECIMAL(11,8),
     avatar_url TEXT,
     rating DECIMAL(3,2) DEFAULT 0.00,
     completed_tasks INTEGER DEFAULT 0,

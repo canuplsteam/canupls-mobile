@@ -10,16 +10,17 @@ import {
   ScrollView,
   SafeAreaView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../contexts/AuthContext';
-import { Colors, Spacing, FontSizes, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, FontSizes, BorderRadius, Shadows } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signIn, loading } = useAuth();
+  const { signIn, signInWithGoogle, signInWithMicrosoft, loading } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -50,9 +51,24 @@ export default function LoginScreen() {
     
     try {
       await signIn(email.trim(), password);
-      // Navigation handled by AuthContext
     } catch (error) {
       // Error alert handled by AuthContext
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to sign in with Google');
+    }
+  };
+
+  const handleMicrosoftSignIn = async () => {
+    try {
+      await signInWithMicrosoft();
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to sign in with Outlook');
     }
   };
 
@@ -77,6 +93,34 @@ export default function LoginScreen() {
 
           <Text style={styles.title}>Welcome Back!</Text>
           <Text style={styles.subtitle}>Sign in to continue</Text>
+
+          {/* Social Login Buttons */}
+          <View style={styles.socialContainer}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleGoogleSignIn}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="logo-google" size={24} color="#EA4335" />
+              <Text style={styles.socialButtonText}>Continue with Google</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleMicrosoftSignIn}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="logo-windows" size={24} color="#00A4EF" />
+              <Text style={styles.socialButtonText}>Continue with Outlook</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or sign in with email</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
           {/* Form */}
           <View style={styles.form}>
@@ -182,7 +226,44 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.md,
     fontFamily: 'Poppins-Regular',
     color: Colors.gray[600],
-    marginBottom: Spacing.xxl,
+    marginBottom: Spacing.lg,
+  },
+  socialContainer: {
+    gap: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    ...Shadows.sm,
+  },
+  socialButtonText: {
+    fontSize: FontSizes.md,
+    fontFamily: 'Poppins-Medium',
+    color: Colors.gray[700],
+    marginLeft: Spacing.sm,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.gray[200],
+  },
+  dividerText: {
+    fontSize: FontSizes.xs,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.gray[500],
+    marginHorizontal: Spacing.md,
   },
   form: {
     flex: 1,

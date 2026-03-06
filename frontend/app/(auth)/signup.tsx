@@ -10,24 +10,30 @@ import {
   ScrollView,
   SafeAreaView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../../contexts/AuthContext';
-import { Colors, Spacing, FontSizes, BorderRadius } from '../../constants/theme';
+import { Colors, Spacing, FontSizes, BorderRadius, Shadows } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import Constants from 'expo-constants';
 
-type UserRole = 'requester' | 'helper';
+const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { signUp, loading } = useAuth();
+  const { signUp, signInWithGoogle, signInWithMicrosoft, loading } = useAuth();
   
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [addressLat, setAddressLat] = useState<number | null>(null);
+  const [addressLng, setAddressLng] = useState<number | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userRole, setUserRole] = useState<UserRole>('requester');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -43,6 +49,16 @@ export default function SignupScreen() {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = 'Email is invalid';
+    }
+    
+    if (!phone) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^[\d\s\-\+\(\)]+$/.test(phone)) {
+      newErrors.phone = 'Phone number is invalid';
+    }
+    
+    if (!address) {
+      newErrors.address = 'Address is required';
     }
     
     if (!password) {
@@ -63,10 +79,34 @@ export default function SignupScreen() {
     if (!validateForm()) return;
     
     try {
-      await signUp(email.trim(), password, fullName.trim(), userRole);
+      await signUp(
+        email.trim(),
+        password,
+        fullName.trim(),
+        phone.trim(),
+        address.trim(),
+        addressLat,
+        addressLng
+      );
       // Success alert shown in AuthContext
     } catch (error) {
       // Error alert handled by AuthContext
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to sign in with Google');
+    }
+  };
+
+  const handleMicrosoftSignIn = async () => {
+    try {
+      await signInWithMicrosoft();
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to sign in with Outlook');
     }
   };
 
@@ -92,56 +132,32 @@ export default function SignupScreen() {
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join the Canupls community</Text>
 
-          {/* Role Selection */}
-          <View style={styles.roleContainer}>
-            <Text style={styles.roleLabel}>I want to:</Text>
-            <View style={styles.roleButtons}>
-              <TouchableOpacity
-                style={[
-                  styles.roleButton,
-                  userRole === 'requester' && styles.roleButtonActive,
-                ]}
-                onPress={() => setUserRole('requester')}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name="list-outline"
-                  size={24}
-                  color={userRole === 'requester' ? Colors.white : Colors.primary}
-                />
-                <Text
-                  style={[
-                    styles.roleButtonText,
-                    userRole === 'requester' && styles.roleButtonTextActive,
-                  ]}
-                >
-                  Request Help
-                </Text>
-              </TouchableOpacity>
+          {/* Social Login Buttons */}
+          <View style={styles.socialContainer}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleGoogleSignIn}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="logo-google" size={24} color="#EA4335" />
+              <Text style={styles.socialButtonText}>Continue with Google</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.roleButton,
-                  userRole === 'helper' && styles.roleButtonActive,
-                ]}
-                onPress={() => setUserRole('helper')}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name="hand-right-outline"
-                  size={24}
-                  color={userRole === 'helper' ? Colors.white : Colors.primary}
-                />
-                <Text
-                  style={[
-                    styles.roleButtonText,
-                    userRole === 'helper' && styles.roleButtonTextActive,
-                  ]}
-                >
-                  Offer Help
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={handleMicrosoftSignIn}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="logo-windows" size={24} color="#00A4EF" />
+              <Text style={styles.socialButtonText}>Continue with Outlook</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or sign up with email</Text>
+            <View style={styles.dividerLine} />
           </View>
 
           {/* Form */}
@@ -184,6 +200,59 @@ export default function SignupScreen() {
                 />
               </View>
               {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+            </View>
+
+            {/* Phone Input */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Phone Number</Text>
+              <View style={[styles.inputWrapper, errors.phone && styles.inputError]}>
+                <Ionicons name="call-outline" size={20} color={Colors.gray[400]} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="+1 (555) 123-4567"
+                  value={phone}
+                  onChangeText={(text) => {
+                    setPhone(text);
+                    if (errors.phone) setErrors({ ...errors, phone: undefined });
+                  }}
+                  keyboardType="phone-pad"
+                />
+              </View>
+              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+            </View>
+
+            {/* Address Input with Google Autocomplete */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Address</Text>
+              <View style={[styles.autocompleteWrapper, errors.address && styles.inputError]}>
+                <Ionicons name="location-outline" size={20} color={Colors.gray[400]} style={styles.autocompleteIcon} />
+                <GooglePlacesAutocomplete
+                  placeholder="Search for your address"
+                  onPress={(data, details = null) => {
+                    setAddress(data.description);
+                    if (details?.geometry?.location) {
+                      setAddressLat(details.geometry.location.lat);
+                      setAddressLng(details.geometry.location.lng);
+                    }
+                    if (errors.address) setErrors({ ...errors, address: undefined });
+                  }}
+                  query={{
+                    key: GOOGLE_MAPS_API_KEY,
+                    language: 'en',
+                  }}
+                  fetchDetails={true}
+                  styles={{
+                    textInput: styles.autocompleteInput,
+                    listView: styles.autocompleteList,
+                    row: styles.autocompleteRow,
+                  }}
+                  enablePoweredByContainer={false}
+                  textInputProps={{
+                    placeholderTextColor: Colors.gray[400],
+                  }}
+                />
+              </View>
+              {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
             </View>
 
             {/* Password Input */}
@@ -296,41 +365,42 @@ const styles = StyleSheet.create({
     color: Colors.gray[600],
     marginBottom: Spacing.lg,
   },
-  roleContainer: {
+  socialContainer: {
+    gap: Spacing.md,
     marginBottom: Spacing.lg,
   },
-  roleLabel: {
-    fontSize: FontSizes.sm,
-    fontFamily: 'Poppins-Medium',
-    color: Colors.gray[700],
-    marginBottom: Spacing.sm,
-  },
-  roleButtons: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  roleButton: {
-    flex: 1,
+  socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.white,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    ...Shadows.sm,
   },
-  roleButtonActive: {
-    backgroundColor: Colors.primary,
+  socialButtonText: {
+    fontSize: FontSizes.md,
+    fontFamily: 'Poppins-Medium',
+    color: Colors.gray[700],
+    marginLeft: Spacing.sm,
   },
-  roleButtonText: {
-    fontSize: FontSizes.sm,
-    fontFamily: 'Poppins-SemiBold',
-    color: Colors.primary,
-    marginLeft: Spacing.xs,
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Spacing.lg,
   },
-  roleButtonTextActive: {
-    color: Colors.white,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.gray[200],
+  },
+  dividerText: {
+    fontSize: FontSizes.xs,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.gray[500],
+    marginHorizontal: Spacing.md,
   },
   form: {
     flex: 1,
@@ -365,6 +435,33 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.md,
     fontFamily: 'Poppins-Regular',
     color: Colors.gray[700],
+  },
+  autocompleteWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    paddingLeft: Spacing.md,
+    minHeight: 52,
+  },
+  autocompleteIcon: {
+    marginTop: 16,
+    marginRight: Spacing.sm,
+  },
+  autocompleteInput: {
+    fontSize: FontSizes.md,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.gray[700],
+    paddingVertical: Spacing.md,
+  },
+  autocompleteList: {
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.xs,
+  },
+  autocompleteRow: {
+    paddingVertical: Spacing.sm,
   },
   errorText: {
     fontSize: FontSizes.xs,

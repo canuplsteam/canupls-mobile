@@ -3,13 +3,16 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Alert } from 'react-native';
 
-type UserRole = 'requester' | 'helper';
+type UserRole = 'requester' | 'helper' | 'both';
 
 interface Profile {
   id: string;
   user_role: UserRole;
   full_name: string;
   phone?: string;
+  address?: string;
+  address_lat?: number;
+  address_lng?: number;
   avatar_url?: string;
   rating: number;
   completed_tasks: number;
@@ -21,8 +24,18 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string, userRole: UserRole) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    phone: string,
+    address: string,
+    addressLat: number | null,
+    addressLng: number | null
+  ) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
 }
@@ -79,7 +92,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, userRole: UserRole) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    phone: string,
+    address: string,
+    addressLat: number | null,
+    addressLng: number | null
+  ) => {
     try {
       setLoading(true);
       
@@ -92,13 +113,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       if (data.user) {
-        // Create profile
+        // Create profile with all details
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
             id: data.user.id,
-            user_role: userRole,
+            user_role: 'both', // All users can both request and offer help
             full_name: fullName,
+            phone: phone,
+            address: address,
+            address_lat: addressLat,
+            address_lng: addressLng,
             rating: 0,
             completed_tasks: 0,
             is_available: true,
@@ -128,6 +153,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       });
 
+      if (error) throw error;
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithMicrosoft = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'azure',
+      });
       if (error) throw error;
     } catch (error: any) {
       Alert.alert('Error', error.message);
@@ -174,6 +229,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         signUp,
         signIn,
+        signInWithGoogle,
+        signInWithMicrosoft,
         signOut,
         updateProfile,
       }}
