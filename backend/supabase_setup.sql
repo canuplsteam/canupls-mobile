@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS profiles (
     address_lat DECIMAL(10,8),
     address_lng DECIMAL(11,8),
     avatar_url TEXT,
+    stripe_customer_id TEXT,
     rating DECIMAL(3,2) DEFAULT 0.00,
     completed_tasks INTEGER DEFAULT 0,
     is_available BOOLEAN DEFAULT TRUE,

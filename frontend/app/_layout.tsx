@@ -33,6 +33,7 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="task" />
+        <Stack.Screen name="profile" />
       </Stack>
     </AuthProvider>
   );

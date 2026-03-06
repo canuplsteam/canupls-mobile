@@ -17,6 +17,7 @@ interface Profile {
   rating: number;
   completed_tasks: number;
   is_available: boolean;
+  stripe_customer_id?: string;
 }
 
 interface AuthContextType {

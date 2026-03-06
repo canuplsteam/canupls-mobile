@@ -1,16 +1,11 @@
-from fastapi import FastAPI, HTTPException, Request, Depends, Header
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, List
+from typing import Optional, List
 from datetime import datetime
 import os
+import stripe
 from dotenv import load_dotenv
-from emergentintegrations.payments.stripe.checkout import (
-    StripeCheckout,
-    CheckoutSessionResponse,
-    CheckoutStatusResponse,
-    CheckoutSessionRequest
-)
 
 # Load environment variables
 load_dotenv()
@@ -29,41 +24,32 @@ app.add_middleware(
 # Configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
-STRIPE_API_KEY = os.getenv("STRIPE_API_KEY")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_API_KEY", "sk_test_4eC39HqLyjWDarjtT1zdp7dc")
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 
-# Pydantic Models
-class TaskCreate(BaseModel):
-    title: str
-    description: str
-    category: str
-    location_lat: float
-    location_lng: float
-    location_address: str
-    price: float
+# Initialize Stripe
+stripe.api_key = STRIPE_SECRET_KEY
 
-class TaskUpdate(BaseModel):
-    status: Optional[str] = None
-    helper_location_lat: Optional[float] = None
-    helper_location_lng: Optional[float] = None
+# ─── Pydantic Models ────────────────────────────────────────────
 
-class ProfileUpdate(BaseModel):
-    full_name: Optional[str] = None
-    phone: Optional[str] = None
-    avatar_url: Optional[str] = None
-    is_available: Optional[bool] = None
-    location_lat: Optional[float] = None
-    location_lng: Optional[float] = None
+class CreateCustomerRequest(BaseModel):
+    email: str
+    name: str
+    user_id: str
 
-class RatingCreate(BaseModel):
-    task_id: str
-    to_user_id: str
-    rating: int = Field(..., ge=1, le=5)
-    comment: Optional[str] = None
+class SetupIntentRequest(BaseModel):
+    customer_id: str
 
-class PaymentCheckoutRequest(BaseModel):
-    task_id: str
-    origin_url: str
+class PaymentIntentRequest(BaseModel):
+    customer_id: str
+    amount: int  # in cents
+    payment_method_id: Optional[str] = None
+    metadata: Optional[dict] = None
+
+class DeletePaymentMethodRequest(BaseModel):
+    payment_method_id: str
+
+# ─── Health & Config ────────────────────────────────────────────
 
 @app.get("/")
 async def root():
@@ -79,17 +65,14 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
         "supabase_configured": bool(SUPABASE_URL and SUPABASE_ANON_KEY),
-        "stripe_configured": bool(STRIPE_API_KEY),
+        "stripe_configured": bool(STRIPE_SECRET_KEY),
         "maps_configured": bool(GOOGLE_MAPS_API_KEY)
     }
 
-# Configuration endpoint for mobile app
 @app.get("/api/config")
 async def get_config():
-    """Get public configuration for mobile app"""
     return {
         "supabase_url": SUPABASE_URL,
-        "supabase_anon_key": SUPABASE_ANON_KEY,
         "google_maps_api_key": GOOGLE_MAPS_API_KEY,
         "features": {
             "payments": True,
@@ -98,111 +81,112 @@ async def get_config():
         }
     }
 
-# Payment Endpoints
-@app.post("/api/payments/checkout", response_model=CheckoutSessionResponse)
-async def create_checkout_session(
-    request: PaymentCheckoutRequest,
-    http_request: Request
-):
-    """
-    Create a Stripe checkout session for task payment
-    Amount is determined by the task, not from frontend
-    """
-    try:
-        # In production, you would fetch the task from Supabase to get the price
-        # For now, we'll use a placeholder amount
-        # TODO: Fetch actual task price from Supabase
-        amount = 10.00  # Placeholder - should be fetched from task
-        
-        # Build success and cancel URLs from origin
-        success_url = f"{request.origin_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}"
-        cancel_url = f"{request.origin_url}/payment-cancel"
-        
-        # Initialize Stripe Checkout
-        host_url = str(http_request.base_url).rstrip('/')
-        webhook_url = f"{host_url}/api/webhook/stripe"
-        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-        
-        # Create checkout session
-        checkout_request = CheckoutSessionRequest(
-            amount=amount,
-            currency="usd",
-            success_url=success_url,
-            cancel_url=cancel_url,
-            metadata={
-                "task_id": request.task_id,
-                "source": "canupls_mobile"
-            }
-        )
-        
-        session = await stripe_checkout.create_checkout_session(checkout_request)
-        
-        # TODO: Create payment_transactions record in Supabase with status="pending"
-        
-        return session
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# ─── Stripe: Customer Management ────────────────────────────────
 
-@app.get("/api/payments/status/{session_id}", response_model=CheckoutStatusResponse)
-async def get_payment_status(session_id: str, http_request: Request):
-    """
-    Check the status of a payment session
-    """
+@app.post("/api/stripe/customer")
+async def create_stripe_customer(req: CreateCustomerRequest):
+    """Create a Stripe customer for a Canupls user"""
     try:
-        host_url = str(http_request.base_url).rstrip('/')
-        webhook_url = f"{host_url}/api/webhook/stripe"
-        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-        
-        status = await stripe_checkout.get_checkout_status(session_id)
-        
-        # TODO: Update payment_transactions record in Supabase based on status
-        
-        return status
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        customer = stripe.Customer.create(
+            email=req.email,
+            name=req.name,
+            metadata={"canupls_user_id": req.user_id}
+        )
+        return {"customer_id": customer.id, "email": customer.email}
+    except stripe.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ─── Stripe: Setup Intent (for saving payment methods) ──────────
+
+@app.post("/api/stripe/setup-intent")
+async def create_setup_intent(req: SetupIntentRequest):
+    """Create a SetupIntent so the user can save a payment method"""
+    try:
+        intent = stripe.SetupIntent.create(
+            customer=req.customer_id,
+            payment_method_types=["card"],
+        )
+        return {
+            "setup_intent_id": intent.id,
+            "client_secret": intent.client_secret,
+        }
+    except stripe.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ─── Stripe: Payment Methods ────────────────────────────────────
+
+@app.get("/api/stripe/payment-methods/{customer_id}")
+async def list_payment_methods(customer_id: str):
+    """List all saved payment methods for a customer"""
+    try:
+        methods = stripe.PaymentMethod.list(
+            customer=customer_id,
+            type="card",
+        )
+        cards = []
+        for pm in methods.data:
+            cards.append({
+                "id": pm.id,
+                "brand": pm.card.brand,
+                "last4": pm.card.last4,
+                "exp_month": pm.card.exp_month,
+                "exp_year": pm.card.exp_year,
+            })
+        return {"payment_methods": cards}
+    except stripe.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/api/stripe/payment-method/{payment_method_id}")
+async def delete_payment_method(payment_method_id: str):
+    """Detach a payment method from a customer"""
+    try:
+        stripe.PaymentMethod.detach(payment_method_id)
+        return {"status": "deleted", "payment_method_id": payment_method_id}
+    except stripe.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ─── Stripe: Payment Intent (charge for a task) ─────────────────
+
+@app.post("/api/stripe/payment-intent")
+async def create_payment_intent(req: PaymentIntentRequest):
+    """Create a PaymentIntent for a task payment"""
+    try:
+        params = {
+            "amount": req.amount,
+            "currency": "usd",
+            "customer": req.customer_id,
+            "metadata": req.metadata or {},
+        }
+        if req.payment_method_id:
+            params["payment_method"] = req.payment_method_id
+            params["confirm"] = True
+            params["return_url"] = "canupls://payment-complete"
+
+        intent = stripe.PaymentIntent.create(**params)
+        return {
+            "payment_intent_id": intent.id,
+            "client_secret": intent.client_secret,
+            "status": intent.status,
+        }
+    except stripe.StripeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ─── Stripe: Webhook ────────────────────────────────────────────
 
 @app.post("/api/webhook/stripe")
 async def stripe_webhook(request: Request):
-    """
-    Handle Stripe webhooks for payment events
-    """
+    """Handle Stripe webhooks"""
     try:
         body = await request.body()
-        signature = request.headers.get("Stripe-Signature")
-        
-        host_url = str(request.base_url).rstrip('/')
-        webhook_url = f"{host_url}/api/webhook/stripe"
-        stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-        
-        webhook_response = await stripe_checkout.handle_webhook(body, signature)
-        
-        # TODO: Handle different event types and update Supabase accordingly
-        # webhook_response has: event_type, event_id, session_id, payment_status, metadata
-        
-        return {"status": "success", "event_type": webhook_response.event_type}
-        
+        event = stripe.Event.construct_from(
+            stripe.util.convert_to_dict(
+                stripe.util.json.loads(body)
+            ),
+            stripe.api_key,
+        )
+        return {"status": "received", "type": event.type}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-# Nearby Tasks Endpoint (using simple distance calculation)
-@app.get("/api/tasks/nearby")
-async def get_nearby_tasks(
-    lat: float,
-    lng: float,
-    radius_km: float = 10.0,
-    user_id: Optional[str] = None
-):
-    """
-    Get tasks near a location
-    In production, this would query Supabase with PostGIS or calculate distance
-    """
-    # TODO: Implement actual Supabase query with distance calculation
-    return {
-        "tasks": [],
-        "message": "Nearby tasks endpoint - integrate with Supabase"
-    }
 
 if __name__ == "__main__":
     import uvicorn
