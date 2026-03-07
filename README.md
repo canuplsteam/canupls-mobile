@@ -31,7 +31,7 @@ Canupls is a hyperlocal help marketplace connecting people who need quick help w
 - **Database**: Supabase (PostgreSQL)
 - **Auth**: Supabase Auth
 - **Storage**: Supabase Storage
-- **Payments**: Stripe (via emergentintegrations)
+- **Payments**: Stripe
 - **Maps**: Google Maps API
 - **Navigation**: Expo Router (file-based routing)
 

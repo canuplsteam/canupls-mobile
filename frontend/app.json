@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/splash-image.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F8F9FA"
+      "backgroundColor": "#FAFAFA"
     },
     "ios": {
       "supportsTablet": true,
@@ -30,7 +30,7 @@
       "package": "com.canupls.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0047AB"
+        "backgroundColor": "#FFFFFF"
       },
       "permissions": [
         "ACCESS_COARSE_LOCATION",
@@ -48,7 +48,7 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -63,10 +63,6 @@
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "web": {
-      "output": "single",
-      "bundler": "metro"
     }
   }
 }
