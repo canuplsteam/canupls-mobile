@@ -9,7 +9,7 @@ import json
 import sys
 
 # Use the production backend URL from frontend/.env
-BASE_URL = "https://hyperlocal-market-7.preview.emergentagent.com/api"
+BASE_URL = "https://canupls-marketplace.preview.emergentagent.com/api"
 
 def test_health_endpoint():
     """Test GET /api/health - Should return healthy status with stripe_configured field"""

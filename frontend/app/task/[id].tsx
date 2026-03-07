@@ -9,7 +9,6 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
-  Dimensions,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,8 +17,14 @@ import { supabase } from '../../lib/supabase';
 import { Colors, Spacing, FontSizes, BorderRadius, Shadows } from '../../constants/theme';
 import StatusStepper from '../../components/StatusStepper';
 import ReceiptViewer from '../../components/ReceiptViewer';
+import SharedChecklist from '../../components/SharedChecklist';
+import {
+  startBackgroundLocationTracking,
+  stopBackgroundLocationTracking,
+  isTrackingActive,
+} from '../../services/locationTracking';
+import { MapView, Marker } from '../../components/MapWrapper';
 
-const { width } = Dimensions.get('window');
 
 interface Task {
   id: string;
@@ -37,8 +42,19 @@ interface Task {
   created_at: string;
   accepted_at: string | null;
   completed_at: string | null;
+  helper_location_lat?: number;
+  helper_location_lng?: number;
+  helper_location_updated_at?: string;
   requester?: { full_name: string; phone?: string };
   helper?: { full_name: string; phone?: string };
+}
+
+interface ChecklistItem {
+  id: string;
+  task_id: string;
+  item_name: string;
+  is_checked: boolean;
+  position: number;
 }
 
 const categoryNames: Record<string, string> = {
@@ -86,9 +102,28 @@ export default function TaskDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
+  const [trackingActive, setTrackingActive] = useState(false);
+  const [checklistLoading, setChecklistLoading] = useState(false);
 
   const isRequester = task?.requester_id === user?.id;
   const isHelper = task?.helper_id === user?.id;
+  const hasChecklist = task?.category === 'grocery' || task?.category === 'pharmacy';
+  const showTrackingMap =
+    !!task?.helper_id &&
+    (task?.status === 'accepted' || task?.status === 'in_progress');
+
+  // Helper: time-ago display
+  const getTimeAgo = (dateStr: string): string => {
+    const now = new Date();
+    const past = new Date(dateStr);
+    const diffMs = now.getTime() - past.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    if (diffSecs < 60) return `${diffSecs}s ago`;
+    const diffMins = Math.floor(diffSecs / 60);
+    if (diffMins < 60) return `${diffMins}m ago`;
+    return `${Math.floor(diffMins / 60)}h ago`;
+  };
 
   const fetchTask = useCallback(async () => {
     if (!id) return;
@@ -134,6 +169,66 @@ export default function TaskDetailScreen() {
     };
   }, [id, fetchTask]);
 
+  // ---- Checklist: fetch + real-time subscription ----
+  useEffect(() => {
+    if (!task || !hasChecklist || !id) return;
+
+    const fetchChecklist = async () => {
+      try {
+        setChecklistLoading(true);
+        const { data, error } = await supabase
+          .from('checklist_items')
+          .select('*')
+          .eq('task_id', id)
+          .order('position', { ascending: true });
+        if (error) throw error;
+        setChecklistItems(data || []);
+      } catch (error: any) {
+        console.error('Error fetching checklist:', error);
+      } finally {
+        setChecklistLoading(false);
+      }
+    };
+
+    fetchChecklist();
+
+    // Subscribe to real-time checklist changes
+    const checklistChannel = supabase
+      .channel(`checklist-${id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'checklist_items', filter: `task_id=eq.${id}` },
+        () => {
+          fetchChecklist(); // refetch on any change
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(checklistChannel);
+    };
+  }, [task?.category, id]);
+
+  // ---- Tracking: check active state on mount ----
+  useEffect(() => {
+    const checkTracking = async () => {
+      const active = await isTrackingActive();
+      setTrackingActive(active);
+    };
+    checkTracking();
+  }, []);
+
+  // ---- Tracking: auto-stop when task completed/cancelled ----
+  useEffect(() => {
+    if (
+      task &&
+      (task.status === 'completed' || task.status === 'cancelled') &&
+      trackingActive
+    ) {
+      stopBackgroundLocationTracking().then(() => setTrackingActive(false));
+    }
+  }, [task?.status, trackingActive]);
+
   const handleUpdateStatus = async () => {
     if (!task || !isHelper) return;
 
@@ -163,6 +258,26 @@ export default function TaskDetailScreen() {
               .eq('id', task.id);
 
             if (error) throw error;
+
+            // Auto-start location tracking when task transitions to in_progress
+            if (transition.next === 'in_progress' && !trackingActive) {
+              try {
+                await startBackgroundLocationTracking(task.id);
+                setTrackingActive(true);
+              } catch (locError: any) {
+                console.warn('Could not auto-start tracking:', locError);
+              }
+            }
+
+            // Auto-stop location tracking when task is completed
+            if (transition.next === 'completed' && trackingActive) {
+              try {
+                await stopBackgroundLocationTracking();
+                setTrackingActive(false);
+              } catch (locError: any) {
+                console.warn('Could not auto-stop tracking:', locError);
+              }
+            }
 
             setTask((prev) => (prev ? { ...prev, ...updates } : prev));
             Alert.alert('Success', 'Task status updated!');
@@ -205,6 +320,77 @@ export default function TaskDetailScreen() {
 
   const handleReceiptUploaded = (url: string) => {
     setTask((prev) => (prev ? { ...prev, receipt_url: url } : prev));
+  };
+
+  // ---- Checklist Handlers ----
+  const handleAddChecklistItem = async (itemName: string) => {
+    if (!id || !user) return;
+    try {
+      const newPosition = checklistItems.length;
+      const { error } = await supabase.from('checklist_items').insert({
+        task_id: id,
+        item_name: itemName,
+        position: newPosition,
+        created_by: user.id,
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error adding checklist item:', error);
+      Alert.alert('Error', 'Failed to add item. Please try again.');
+    }
+  };
+
+  const handleRemoveChecklistItem = async (index: number) => {
+    const item = checklistItems[index];
+    if (!item) return;
+    try {
+      const { error } = await supabase
+        .from('checklist_items')
+        .delete()
+        .eq('id', item.id);
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error removing checklist item:', error);
+      Alert.alert('Error', 'Failed to remove item.');
+    }
+  };
+
+  const handleToggleChecklistItem = async (index: number) => {
+    const item = checklistItems[index];
+    if (!item || !user) return;
+    try {
+      const { error } = await supabase
+        .from('checklist_items')
+        .update({
+          is_checked: !item.is_checked,
+          checked_by: !item.is_checked ? user.id : null,
+          checked_at: !item.is_checked ? new Date().toISOString() : null,
+        })
+        .eq('id', item.id);
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error toggling checklist item:', error);
+      Alert.alert('Error', 'Failed to update item.');
+    }
+  };
+
+  // ---- Location Tracking Handler ----
+  const handleToggleTracking = async () => {
+    if (!task) return;
+    try {
+      if (trackingActive) {
+        await stopBackgroundLocationTracking();
+        setTrackingActive(false);
+      } else {
+        await startBackgroundLocationTracking(task.id);
+        setTrackingActive(true);
+      }
+    } catch (error: any) {
+      Alert.alert(
+        'Location Tracking',
+        error.message || 'Failed to toggle location tracking. Please check permissions.',
+      );
+    }
   };
 
   const onRefresh = () => {
@@ -339,6 +525,138 @@ export default function TaskDetailScreen() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Progress</Text>
             <StatusStepper currentStatus={task.status} />
+          </View>
+        )}
+
+        {/* ========== Shared Checklist (Grocery / Pharmacy) ========== */}
+        {hasChecklist && task.status !== 'cancelled' && (
+          <View style={styles.card}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="list" size={22} color={catColor} />
+              <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Shopping List</Text>
+              <View style={styles.checklistBadge}>
+                <Text style={styles.checklistBadgeText}>
+                  {checklistItems.filter((i) => i.is_checked).length}/{checklistItems.length}
+                </Text>
+              </View>
+            </View>
+            {checklistLoading ? (
+              <ActivityIndicator
+                size="small"
+                color={Colors.primary}
+                style={{ paddingVertical: Spacing.lg }}
+              />
+            ) : (
+              <SharedChecklist
+                items={checklistItems.map((item) => item.item_name)}
+                onAddItem={handleAddChecklistItem}
+                onRemoveItem={handleRemoveChecklistItem}
+                editable={isRequester && task.status !== 'completed'}
+                checkedItems={checklistItems.map((item) => item.is_checked)}
+                onToggleCheck={
+                  isRequester || isHelper ? handleToggleChecklistItem : undefined
+                }
+              />
+            )}
+          </View>
+        )}
+
+        {/* ========== Live Tracking Map ========== */}
+        {showTrackingMap && (
+          <View style={styles.card}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="navigate" size={22} color={Colors.primary} />
+              <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Live Tracking</Text>
+              {task.helper_location_updated_at && (
+                <Text style={styles.lastUpdated}>
+                  {getTimeAgo(task.helper_location_updated_at)}
+                </Text>
+              )}
+            </View>
+
+            <View style={styles.mapContainer}>
+              <MapView
+                style={styles.map}
+                initialRegion={{
+                  latitude: task.helper_location_lat || task.location_lat,
+                  longitude: task.helper_location_lng || task.location_lng,
+                  latitudeDelta: 0.015,
+                  longitudeDelta: 0.015,
+                }}
+                region={
+                  task.helper_location_lat
+                    ? {
+                        latitude: task.helper_location_lat,
+                        longitude: task.helper_location_lng!,
+                        latitudeDelta: 0.015,
+                        longitudeDelta: 0.015,
+                      }
+                    : undefined
+                }
+              >
+                {/* Destination marker */}
+                <Marker
+                  coordinate={{
+                    latitude: task.location_lat,
+                    longitude: task.location_lng,
+                  }}
+                  title="Destination"
+                  pinColor={catColor}
+                />
+
+                {/* Helper live location marker */}
+                {task.helper_location_lat != null &&
+                  task.helper_location_lng != null && (
+                    <Marker
+                      coordinate={{
+                        latitude: task.helper_location_lat,
+                        longitude: task.helper_location_lng,
+                      }}
+                      title={task.helper?.full_name || 'Helper'}
+                      pinColor={Colors.primary}
+                    />
+                  )}
+              </MapView>
+            </View>
+
+            {/* Tracking toggle for helper */}
+            {isHelper && (
+              <TouchableOpacity
+                style={[
+                  styles.trackingButton,
+                  trackingActive
+                    ? styles.trackingButtonStop
+                    : styles.trackingButtonStart,
+                ]}
+                onPress={handleToggleTracking}
+                activeOpacity={0.8}
+              >
+                <Ionicons
+                  name={trackingActive ? 'stop-circle' : 'navigate-circle'}
+                  size={22}
+                  color={Colors.white}
+                />
+                <Text style={styles.trackingButtonText}>
+                  {trackingActive
+                    ? 'Stop Sharing Location'
+                    : 'Start Sharing Location'}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Waiting message for requester */}
+            {isRequester && !task.helper_location_lat && (
+              <View style={styles.noLocationInfo}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={18}
+                  color={Colors.gray[500]}
+                />
+                <Text style={styles.noLocationText}>
+                  Waiting for helper to start sharing their location…
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -723,5 +1041,70 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-SemiBold',
     color: '#B45309',
     marginLeft: Spacing.sm,
+  },
+  // ---- Checklist & Tracking styles ----
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  checklistBadge: {
+    marginLeft: 'auto',
+    backgroundColor: Colors.success + '20',
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+  },
+  checklistBadgeText: {
+    fontSize: FontSizes.xs,
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.success,
+  },
+  lastUpdated: {
+    marginLeft: 'auto',
+    fontSize: FontSizes.xs,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.gray[400],
+  },
+  mapContainer: {
+    height: 250,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+    marginBottom: Spacing.md,
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  trackingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.sm,
+  },
+  trackingButtonStart: {
+    backgroundColor: Colors.primary,
+  },
+  trackingButtonStop: {
+    backgroundColor: Colors.error,
+  },
+  trackingButtonText: {
+    color: Colors.white,
+    fontSize: FontSizes.md,
+    fontFamily: 'Poppins-SemiBold',
+  },
+  noLocationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  noLocationText: {
+    flex: 1,
+    fontSize: FontSizes.sm,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.gray[500],
   },
 });

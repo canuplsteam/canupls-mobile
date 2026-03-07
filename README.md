@@ -129,7 +129,7 @@ yarn start
 
 The app is already running at:
 - **Backend API**: http://localhost:8001
-- **Frontend**: https://hyperlocal-market-7.preview.emergentagent.com
+- **Frontend**: https://canupls-marketplace.preview.emergentagent.com
 - **API Docs**: http://localhost:8001/docs
 
 ## 🎨 Design System

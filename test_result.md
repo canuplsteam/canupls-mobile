@@ -278,3 +278,29 @@ agent_communication:
     - message: "Phase 6 Receipt & Expense Management implementation complete. Created task/[id].tsx (unified detail screen), rebuilt tasks.tsx (full task list), wired navigation from home/browse/tasks to detail, fixed receipt service to work with existing DB schema, aligned StatusStepper with DB enum, fixed RLS policies. Migration SQL provided. Ready for testing."
     - agent: "testing"
     - message: "Stripe API endpoints testing complete. All 5 endpoints tested successfully: health check (✅), customer creation (✅), payment methods (✅), setup intent (✅), and CORS (✅). Auth errors on Stripe endpoints are expected with placeholder test key 'sk_test_emergent'. All routes are registered and responding correctly."
+    - agent: "main"
+    - message: "Integrated SharedChecklist and Live Tracking Map into task/[id].tsx. Checklist: fetches from checklist_items table, real-time subscription, add/remove/toggle items via Supabase. Shows for grocery/pharmacy tasks. Tracking: MapView with destination + helper markers, helper can start/stop location sharing, auto-starts on task in_progress, auto-stops on completion. All wired to existing services/locationTracking.ts and components/SharedChecklist.tsx."
+
+  - task: "SharedChecklist Integration in Task Detail"
+    implemented: true
+    working: "NA"
+    file: "app/task/[id].tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Integrated SharedChecklist component into task detail screen. Fetches checklist_items from Supabase, real-time subscription for live updates, CRUD operations (add/remove/toggle check). Shows for grocery/pharmacy categories. Requester can add/remove items, both can check/uncheck."
+
+  - task: "Live Tracking Map Integration in Task Detail"
+    implemented: true
+    working: "NA"
+    file: "app/task/[id].tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Integrated MapView with live tracking into task detail screen. Shows when task is accepted or in_progress. Displays destination marker and helper's real-time location. Helper has start/stop tracking button. Auto-starts tracking on status transition to in_progress. Auto-stops on completion/cancellation. Uses existing locationTracking service for background GPS updates."
