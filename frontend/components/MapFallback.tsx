@@ -15,7 +15,7 @@ export function MapViewWeb({ style, ...props }: MapFallbackProps) {
     <View style={[styles.container, style]}>
       <Ionicons name="map-outline" size={64} color={Colors.gray[400]} />
       <Text style={styles.text}>Map view is available on mobile devices</Text>
-      <Text style={styles.subtext}>Download the Canupls app to browse nearby tasks</Text>
+      <Text style={styles.subtext}>Download the canUpls app to browse nearby tasks</Text>
     </View>
   );
 }

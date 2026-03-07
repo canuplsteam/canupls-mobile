@@ -55,6 +55,10 @@ export default function RootLayout() {
     'Poppins-Medium': require('../assets/fonts/Poppins-Medium.ttf'),
     'Poppins-SemiBold': require('../assets/fonts/Poppins-SemiBold.ttf'),
     'Poppins-Bold': require('../assets/fonts/Poppins-Bold.ttf'),
+    'EBGaramond-Regular': require('../assets/fonts/EBGaramond-Regular.ttf'),
+    'EBGaramond-Medium': require('../assets/fonts/EBGaramond-Medium.ttf'),
+    'EBGaramond-SemiBold': require('../assets/fonts/EBGaramond-SemiBold.ttf'),
+    'EBGaramond-Bold': require('../assets/fonts/EBGaramond-Bold.ttf'),
   });
 
   const [ready, setReady] = useState(false);

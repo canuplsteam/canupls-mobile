@@ -182,7 +182,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         {/* Version */}
-        <Text style={styles.version}>Canupls v1.0.0</Text>
+        <Text style={styles.version}>canUpls v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );

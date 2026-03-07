@@ -132,7 +132,7 @@ export default function EditProfileScreen() {
           {/* Role Preference */}
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Role Preference</Text>
-            <Text style={styles.fieldHint}>Choose how you want to use Canupls</Text>
+            <Text style={styles.fieldHint}>Choose how you want to use canUpls</Text>
             {roleOptions.map((option) => (
               <TouchableOpacity
                 key={option.value}

@@ -130,7 +130,7 @@ export default function SignupScreen() {
           </TouchableOpacity>
 
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join the Canupls community</Text>
+          <Text style={styles.subtitle}>Join the canUpls community</Text>
 
           {/* Social Login Buttons */}
           <View style={styles.socialContainer}>

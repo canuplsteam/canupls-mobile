@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Canupls",
+    "name": "canUpls",
     "slug": "canupls",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -57,7 +57,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Canupls to use your location for real-time task tracking."
+          "locationAlwaysAndWhenInUsePermission": "Allow canUpls to use your location for real-time task tracking."
         }
       ]
     ],

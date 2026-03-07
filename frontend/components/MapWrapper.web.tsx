@@ -9,7 +9,7 @@ export function MapView({ style, children, ...props }: any) {
     <View style={[styles.container, style]}>
       <Ionicons name="map-outline" size={64} color={Colors.gray[400]} />
       <Text style={styles.text}>Map view available on mobile</Text>
-      <Text style={styles.subtext}>Download the Canupls app</Text>
+      <Text style={styles.subtext}>Download the canUpls app</Text>
     </View>
   );
 }

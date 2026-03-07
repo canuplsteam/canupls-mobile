@@ -11,11 +11,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Colors, Spacing, FontSizes, FontWeights, BorderRadius, Shadows } from '../../constants/theme';
+import { Colors, Spacing, FontSizes, BorderRadius, Shadows } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - Spacing.lg * 3) / 2;
+const cardWidth = (width - Spacing.lg * 2 - Spacing.md) / 2;
 
 const serviceCategories = [
   {
@@ -68,7 +68,10 @@ export default function WelcomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Logo */}
         <View style={styles.logoContainer}>
           <Image
@@ -78,67 +81,85 @@ export default function WelcomeScreen() {
           />
         </View>
 
-        {/* Tagline */}
+        {/* Headline — serif font to match the image */}
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>The Hyperlocal Marketplace</Text>
-          <Text style={styles.subtitle}>
-            Quick help from neighbors you can trust.
+          <Text style={styles.headline}>The Hyperlocal</Text>
+          <Text style={styles.headline}>Marketplace</Text>
+          <View style={styles.divider} />
+          <Text style={styles.subheadline}>
+            Quick help from neighbors{'\n'}you can trust.
           </Text>
         </View>
 
         {/* Service Categories Grid */}
         <View style={styles.categoriesContainer}>
-          <Text style={styles.sectionTitle}>What can we help you with?</Text>
+          <Text style={styles.sectionLabel}>SERVICES</Text>
           <View style={styles.grid}>
             {serviceCategories.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={styles.categoryCard}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
-                <View style={[styles.iconContainer, { backgroundColor: category.color + '20' }]}>
-                  <Ionicons name={category.icon} size={32} color={category.color} />
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: category.color + '15' },
+                  ]}
+                >
+                  <Ionicons
+                    name={category.icon}
+                    size={28}
+                    color={category.color}
+                  />
                 </View>
                 <Text style={styles.categoryTitle}>{category.title}</Text>
-                <Text style={styles.categoryDescription}>{category.description}</Text>
+                <Text style={styles.categoryDescription}>
+                  {category.description}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Features */}
-        <View style={styles.featuresContainer}>
-          <View style={styles.feature}>
-            <Ionicons name="flash" size={20} color={Colors.primary} />
-            <Text style={styles.featureText}>Instant Notifications</Text>
+        {/* Trust badges */}
+        <View style={styles.badgesRow}>
+          <View style={styles.badge}>
+            <Ionicons name="flash" size={18} color={Colors.primary} />
+            <Text style={styles.badgeText}>Instant</Text>
           </View>
-          <View style={styles.feature}>
-            <Ionicons name="shield-checkmark" size={20} color={Colors.primary} />
-            <Text style={styles.featureText}>Secure Payments</Text>
+          <View style={styles.badgeDot} />
+          <View style={styles.badge}>
+            <Ionicons name="shield-checkmark" size={18} color={Colors.primary} />
+            <Text style={styles.badgeText}>Secure</Text>
           </View>
-          <View style={styles.feature}>
-            <Ionicons name="star" size={20} color={Colors.primary} />
-            <Text style={styles.featureText}>Trusted Ratings</Text>
+          <View style={styles.badgeDot} />
+          <View style={styles.badge}>
+            <Ionicons name="star" size={18} color={Colors.primary} />
+            <Text style={styles.badgeText}>Trusted</Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* Get Started Button */}
+      {/* Bottom CTA */}
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={styles.getStartedButton}
           onPress={() => router.push('/(auth)/signup')}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
           <Text style={styles.getStartedButtonText}>Get Started</Text>
-          <Ionicons name="arrow-forward" size={24} color={Colors.white} />
+          <Ionicons name="arrow-forward" size={22} color={Colors.white} />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.loginLink}
           onPress={() => router.push('/(auth)/login')}
         >
-          <Text style={styles.loginLinkText}>Already have an account? <Text style={styles.loginLinkBold}>Sign In</Text></Text>
+          <Text style={styles.loginLinkText}>
+            Already have an account?{' '}
+            <Text style={styles.loginLinkBold}>Sign In</Text>
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -148,51 +169,64 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#FAFAFA',
   },
   scrollContent: {
-    paddingTop: Spacing.lg,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
   },
+
+  /* ---- Logo ---- */
   logoContainer: {
     alignItems: 'center',
     marginBottom: Spacing.lg,
   },
   logo: {
-    width: width * 0.5,
-    height: 100,
+    width: width * 0.4,
+    height: 80,
   },
+
+  /* ---- Headline (Serif) ---- */
   headerContainer: {
     alignItems: 'center',
-    marginBottom: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.xl + Spacing.sm,
+    paddingHorizontal: Spacing.xl,
   },
-  title: {
-    fontSize: 28,
-    fontFamily: 'Poppins-Bold',
-    color: Colors.primary,
+  headline: {
+    fontSize: 34,
+    fontFamily: 'EBGaramond-SemiBold',
+    color: '#1A1A1A',
     textAlign: 'center',
-    marginBottom: Spacing.sm,
-    letterSpacing: -0.5,
+    lineHeight: 44,
+    letterSpacing: 0.3,
   },
-  subtitle: {
-    fontSize: FontSizes.md,
-    fontFamily: 'Poppins-Regular',
-    color: Colors.gray[500],
+  divider: {
+    width: 40,
+    height: 2,
+    backgroundColor: Colors.primary,
+    marginVertical: Spacing.md,
+    borderRadius: 1,
+  },
+  subheadline: {
+    fontSize: 18,
+    fontFamily: 'EBGaramond-Regular',
+    color: '#555555',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 28,
     letterSpacing: 0.2,
   },
+
+  /* ---- Category Grid ---- */
   categoriesContainer: {
     paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
-  sectionTitle: {
-    fontSize: FontSizes.sm,
+  sectionLabel: {
+    fontSize: 11,
     fontFamily: 'Poppins-Medium',
-    color: Colors.gray[500],
+    color: Colors.gray[400],
+    letterSpacing: 2.5,
     marginBottom: Spacing.md,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
   },
   grid: {
     flexDirection: 'row',
@@ -202,57 +236,76 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     width: cardWidth,
-    backgroundColor: Colors.white,
+    backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.lg,
     paddingVertical: Spacing.lg,
     paddingHorizontal: Spacing.md,
     alignItems: 'center',
-    ...Shadows.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
   },
   iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: BorderRadius.full,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm + 2,
   },
   categoryTitle: {
-    fontSize: FontSizes.sm,
+    fontSize: 12,
     fontFamily: 'Poppins-Medium',
-    color: Colors.gray[700],
+    color: '#333333',
     textAlign: 'center',
-    letterSpacing: 0.8,
+    letterSpacing: 1.0,
     textTransform: 'uppercase',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   categoryDescription: {
-    fontSize: FontSizes.xs - 1,
+    fontSize: 11,
     fontFamily: 'Poppins-Regular',
-    color: Colors.gray[400],
+    color: '#999999',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 15,
     letterSpacing: 0.2,
   },
-  featuresContainer: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
-  },
-  feature: {
+
+  /* ---- Trust Badges ---- */
+  badgesRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
+    gap: Spacing.sm,
   },
-  featureText: {
-    fontSize: FontSizes.sm,
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  badgeText: {
+    fontSize: 13,
     fontFamily: 'Poppins-Medium',
-    color: Colors.gray[700],
-    marginLeft: Spacing.sm,
+    color: Colors.gray[600],
+    letterSpacing: 0.5,
   },
+  badgeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.gray[300],
+  },
+
+  /* ---- Bottom CTA ---- */
   buttonContainer: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xl,
-    backgroundColor: Colors.background,
+    paddingTop: Spacing.sm,
+    backgroundColor: '#FAFAFA',
   },
   getStartedButton: {
     backgroundColor: Colors.primary,
@@ -263,7 +316,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    ...Shadows.lg,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   getStartedButtonText: {
     color: Colors.white,

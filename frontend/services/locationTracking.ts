@@ -95,7 +95,7 @@ export const startBackgroundLocationTracking = async (taskId: string): Promise<b
       timeInterval: LOCATION_UPDATE_INTERVAL,
       distanceInterval: 10, // meters
       foregroundService: {
-        notificationTitle: 'Canupls - Task Active',
+        notificationTitle: 'canUpls - Task Active',
         notificationBody: 'Tracking your location for delivery',
         notificationColor: '#0047AB',
       },
