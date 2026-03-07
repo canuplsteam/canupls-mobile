@@ -80,9 +80,9 @@ export default function WelcomeScreen() {
 
         {/* Tagline */}
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>The Hyperlocal{' \n'}Help Marketplace</Text>
+          <Text style={styles.title}>The Hyperlocal Marketplace</Text>
           <Text style={styles.subtitle}>
-            Connecting people who need quick help{' \n'}with nearby helpers
+            Quick help from neighbors you can trust.
           </Text>
         </View>
 
@@ -167,64 +167,72 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontFamily: 'Poppins-Bold',
     color: Colors.primary,
     textAlign: 'center',
     marginBottom: Spacing.sm,
-    lineHeight: 34,
+    letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: FontSizes.sm,
+    fontSize: FontSizes.md,
     fontFamily: 'Poppins-Regular',
-    color: Colors.gray[600],
+    color: Colors.gray[500],
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 24,
+    letterSpacing: 0.2,
   },
   categoriesContainer: {
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.xl,
   },
   sectionTitle: {
-    fontSize: FontSizes.lg,
-    fontFamily: 'Poppins-SemiBold',
-    color: Colors.gray[700],
+    fontSize: FontSizes.sm,
+    fontFamily: 'Poppins-Medium',
+    color: Colors.gray[500],
     marginBottom: Spacing.md,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
+    justifyContent: 'space-between',
+    rowGap: Spacing.md,
   },
   categoryCard: {
     width: cardWidth,
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.md,
     alignItems: 'center',
     ...Shadows.md,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
+    width: 60,
+    height: 60,
     borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.sm + 2,
   },
   categoryTitle: {
-    fontSize: FontSizes.md,
-    fontFamily: 'Poppins-SemiBold',
+    fontSize: FontSizes.sm,
+    fontFamily: 'Poppins-Medium',
     color: Colors.gray[700],
     textAlign: 'center',
-    marginBottom: 4,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 2,
   },
   categoryDescription: {
-    fontSize: FontSizes.xs,
+    fontSize: FontSizes.xs - 1,
     fontFamily: 'Poppins-Regular',
-    color: Colors.gray[500],
+    color: Colors.gray[400],
     textAlign: 'center',
     lineHeight: 16,
+    letterSpacing: 0.2,
   },
   featuresContainer: {
     paddingHorizontal: Spacing.lg,
