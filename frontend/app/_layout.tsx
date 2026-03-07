@@ -1,12 +1,53 @@
-import { Stack } from 'expo-router';
-import { AuthProvider } from '../contexts/AuthContext';
+import React, { useEffect, useState } from 'react';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+/**
+ * Auth navigation guard — runs inside the AuthProvider
+ * so it has access to the auth context.
+ */
+function AuthGatedLayout() {
+  const { session, loading, profile } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return; // still resolving auth
+
+    const inAuthGroup = segments[0] === '(auth)';
+    const inTabsGroup = segments[0] === '(tabs)';
+
+    if (session && profile) {
+      // User is signed in & has a profile — go to Dashboard if not already there
+      if (!inTabsGroup) {
+        router.replace('/(tabs)/home');
+      }
+    } else if (!session) {
+      // User is signed out — go to auth if not already there
+      if (!inAuthGroup) {
+        router.replace('/(auth)/welcome');
+      }
+    }
+    // If session exists but profile is still null, fetchProfile is in progress.
+    // The next render (when profile loads) will trigger navigation.
+  }, [session, loading, profile, segments]);
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="task" />
+      <Stack.Screen name="profile" />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -23,7 +64,6 @@ export default function RootLayout() {
       SplashScreen.hideAsync().catch(() => {});
       setReady(true);
     }
-    // On web, if fonts fail after 3 seconds, proceed anyway
     if (Platform.OS === 'web') {
       const timer = setTimeout(() => setReady(true), 3000);
       return () => clearTimeout(timer);
@@ -37,13 +77,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="task" />
-        <Stack.Screen name="profile" />
-      </Stack>
+      <AuthGatedLayout />
     </AuthProvider>
   );
 }

@@ -1,26 +1,12 @@
-import { useEffect } from 'react';
+import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
-import { useRouter } from 'expo-router';
 import { Colors } from '../constants/theme';
 
+/**
+ * Root index — just a loading screen.
+ * Navigation is handled by the auth guard in _layout.tsx.
+ */
 export default function Index() {
-  const { session, loading, profile } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading) {
-      if (session && profile) {
-        // User is authenticated and has a profile, navigate to tabs
-        router.replace('/(tabs)/home');
-      } else {
-        // User is not authenticated, navigate to auth screens
-        router.replace('/(auth)/welcome');
-      }
-    }
-  }, [session, loading, profile]);
-
-  // Show loading indicator while checking auth state
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={Colors.primary} />

@@ -227,7 +227,7 @@ export default function SignupScreen() {
               <View style={[styles.autocompleteWrapper, errors.address && styles.inputError]}>
                 <Ionicons name="location-outline" size={20} color={Colors.gray[400]} style={styles.autocompleteIcon} />
                 <GooglePlacesAutocomplete
-                  placeholder="Search for your address"
+                  placeholder="Search or type your address"
                   onPress={(data, details = null) => {
                     setAddress(data.description);
                     if (details?.geometry?.location) {
@@ -249,6 +249,14 @@ export default function SignupScreen() {
                   enablePoweredByContainer={false}
                   textInputProps={{
                     placeholderTextColor: Colors.gray[400],
+                    value: address,
+                    onChangeText: (text: string) => {
+                      setAddress(text);
+                      // Clear lat/lng when user types manually (not from autocomplete)
+                      setAddressLat(null);
+                      setAddressLng(null);
+                      if (errors.address) setErrors({ ...errors, address: undefined });
+                    },
                   }}
                 />
               </View>

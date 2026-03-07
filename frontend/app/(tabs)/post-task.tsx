@@ -18,6 +18,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import SharedChecklist from '../../components/SharedChecklist';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import Constants from 'expo-constants';
+
+const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 
 const categoryNames: Record<string, string> = {
   grocery: 'Groceries',
@@ -38,6 +42,8 @@ export default function PostTaskScreen() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [locationAddress, setLocationAddress] = useState(profile?.address || '');
+  const [locationLat, setLocationLat] = useState<number | null>(profile?.address_lat || null);
+  const [locationLng, setLocationLng] = useState<number | null>(profile?.address_lng || null);
   const [checklistItems, setChecklistItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -92,8 +98,8 @@ export default function PostTaskScreen() {
           description,
           category,
           status: 'open',
-          location_lat: profile?.address_lat || 0,
-          location_lng: profile?.address_lng || 0,
+          location_lat: locationLat || profile?.address_lat || 0,
+          location_lng: locationLng || profile?.address_lng || 0,
           location_address: locationAddress,
           price: parseFloat(price),
         })
@@ -143,7 +149,10 @@ export default function PostTaskScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -209,13 +218,39 @@ export default function PostTaskScreen() {
             {/* Location */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Pickup/Delivery Location</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter address or location"
-                value={locationAddress}
-                onChangeText={setLocationAddress}
-                placeholderTextColor={Colors.gray[400]}
-              />
+              <View style={styles.locationWrapper}>
+                <Ionicons name="location-outline" size={20} color={Colors.gray[400]} style={styles.locationIcon} />
+                <GooglePlacesAutocomplete
+                  placeholder="Search or type address"
+                  onPress={(data, details = null) => {
+                    setLocationAddress(data.description);
+                    if (details?.geometry?.location) {
+                      setLocationLat(details.geometry.location.lat);
+                      setLocationLng(details.geometry.location.lng);
+                    }
+                  }}
+                  query={{
+                    key: GOOGLE_MAPS_API_KEY,
+                    language: 'en',
+                  }}
+                  fetchDetails={true}
+                  styles={{
+                    textInput: styles.locationInput,
+                    listView: styles.locationList,
+                    row: styles.locationRow,
+                  }}
+                  enablePoweredByContainer={false}
+                  textInputProps={{
+                    placeholderTextColor: Colors.gray[400],
+                    value: locationAddress,
+                    onChangeText: (text: string) => {
+                      setLocationAddress(text);
+                      setLocationLat(null);
+                      setLocationLng(null);
+                    },
+                  }}
+                />
+              </View>
             </View>
 
             {/* Price */}
@@ -373,5 +408,33 @@ const styles = StyleSheet.create({
     fontSize: FontSizes.lg,
     fontFamily: 'Poppins-SemiBold',
     marginRight: Spacing.sm,
+  },
+  locationWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    paddingLeft: Spacing.md,
+    minHeight: 52,
+  },
+  locationIcon: {
+    marginTop: 16,
+    marginRight: Spacing.sm,
+  },
+  locationInput: {
+    fontSize: FontSizes.md,
+    fontFamily: 'Poppins-Regular',
+    color: Colors.gray[700],
+    paddingVertical: Spacing.md,
+    backgroundColor: 'transparent',
+  },
+  locationList: {
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.xs,
+  },
+  locationRow: {
+    paddingVertical: Spacing.sm,
   },
 });

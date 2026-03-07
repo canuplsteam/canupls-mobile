@@ -117,8 +117,9 @@ export default function HomeScreen() {
 
         {/* Greeting */}
         <View style={styles.greetingContainer}>
-          <Text style={styles.greeting}>Hello,</Text>
-          <Text style={styles.name}>{profile?.full_name || 'User'}!</Text>
+          <Text style={styles.greeting}>
+            Hello, <Text style={styles.name}>{profile?.full_name || 'User'}!</Text>
+          </Text>
         </View>
 
         {/* Can you please button */}
@@ -128,8 +129,8 @@ export default function HomeScreen() {
           onPress={() => router.push('/(tabs)/post-task')}
         >
           <View style={styles.canYouPleaseContent}>
-            <Text style={styles.canYouPleaseText}>Can you please...?</Text>
-            <Ionicons name="add-circle" size={32} color={Colors.white} />
+            <Text style={styles.canYouPleaseText}>Can you please?</Text>
+            <Ionicons name="add-circle" size={28} color={Colors.white} />
           </View>
         </TouchableOpacity>
 
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
   },
   greetingContainer: {
     paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   greeting: {
     fontSize: FontSizes.md,
@@ -239,16 +240,17 @@ const styles = StyleSheet.create({
     color: Colors.gray[600],
   },
   name: {
-    fontSize: 28,
-    fontFamily: 'Poppins-Bold',
+    fontSize: FontSizes.lg,
+    fontFamily: 'Poppins-SemiBold',
     color: Colors.gray[700],
   },
   canYouPleaseButton: {
     marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
     backgroundColor: Colors.primary,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
     ...Shadows.lg,
   },
   canYouPleaseContent: {
@@ -257,7 +259,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   canYouPleaseText: {
-    fontSize: 22,
+    fontSize: FontSizes.xl,
     fontFamily: 'Poppins-SemiBold',
     color: Colors.white,
   },
@@ -274,10 +276,11 @@ const styles = StyleSheet.create({
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
+    justifyContent: 'space-between',
+    rowGap: Spacing.md,
   },
   categoryCard: {
-    width: '31%',
+    width: '48%',
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
@@ -286,8 +289,8 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   categoryIconContainer: {
-    width: 56,
-    height: 56,
+    width: 52,
+    height: 52,
     borderRadius: BorderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
